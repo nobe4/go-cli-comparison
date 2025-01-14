@@ -26,7 +26,7 @@ const (
 | repo | last-commit | stars |
 | --- | --- | --- |
 {{ range . -}}
-| [{{ .FullName }}]({{ .HTMLURL }}] | {{ .PushedAtFormatted }} | {{ .StargazerCount }} |
+| [{{ .FullName }}]({{ .HTMLURL }}) | {{ .PushedAtFormatted }} | {{ .StargazerCount }} |
 {{ end -}}
 ` + marker
 )
