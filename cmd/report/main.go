@@ -11,6 +11,9 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
+
+	"github.com/nobe4/go-cli-comparison/internal/relative"
 )
 
 const (
@@ -20,10 +23,10 @@ const (
 
 	marker         = "<!-- marker:comparison-table -->"
 	readmeTemplate = marker + `
-| repo | stars | last-commit |
+| repo | last-commit | stars |
 | --- | --- | --- |
 {{ range . -}}
-| {{ .FullName }} | {{ .PushedAt }} | {{ .StargazerCount }} |
+| [{{ .FullName }}]({{ .HTMLURL }}] | {{ .PushedAtFormatted }} | {{ .StargazerCount }} |
 {{ end -}}
 ` + marker
 )
@@ -34,9 +37,11 @@ var (
 )
 
 type repo struct {
-	FullName       string `json:"full_name"`
-	PushedAt       string `json:"pushed_at"`
-	StargazerCount int    `json:"stargazers_count"`
+	FullName          string `json:"full_name"`
+	PushedAt          string `json:"pushed_at"`
+	PushedAtFormatted string `json:"-"`
+	StargazerCount    int    `json:"stargazers_count"`
+	HTMLURL           string `json:"html_url"`
 }
 
 func main() {
@@ -78,8 +83,11 @@ func listRepositories() ([]repo, error) {
 
 		return nil
 	})
+	if err != nil {
+		return nil, fmt.Errorf("could not list repositories: %w", err)
+	}
 
-	return list, fmt.Errorf("could not list repositories: %w", err)
+	return list, nil
 }
 
 func fetchRepo(name string) (repo, error) {
@@ -112,6 +120,13 @@ func fetchRepo(name string) (repo, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
 		return repo{}, fmt.Errorf("could not decode response: %w", err)
 	}
+
+	t, err := time.Parse(time.RFC3339, r.PushedAt)
+	if err != nil {
+		return repo{}, fmt.Errorf("could not parse PushedAt %q, %w", r.PushedAt, err)
+	}
+
+	r.PushedAtFormatted = relative.Time(t)
 
 	return r, nil
 }

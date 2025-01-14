@@ -62,14 +62,7 @@ linters-settings:
           - $all
         allow:
           - $gostd
-          - github.com/cli/go-gh
-          - github.com/nobe4/gh-not
-          - github.com/charmbracelet/bubbletea
-          - github.com/charmbracelet/bubbles
-          - github.com/charmbracelet/lipgloss
-          - github.com/spf13/cobra
-          - github.com/spf13/viper
-          - github.com/itchyny/gojq
+          - github.com/nobe4/go-cli-comparison
 
   revive:
     enable-all-rules: true
