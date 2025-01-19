@@ -8,11 +8,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
-	"strings"
 	"text/template"
 	"time"
 
+	"github.com/nobe4/go-cli-comparison/internal/library"
 	"github.com/nobe4/go-cli-comparison/internal/relative"
 )
 
@@ -59,30 +58,26 @@ func main() {
 }
 
 func listRepositories() ([]repo, error) {
-	var err error
+	libs, err := library.List()
+	if err != nil {
+		return nil, fmt.Errorf("could not list libraries: %w", err)
+	}
 
-	var list []repo
+	list := make([]repo, 0, len(libs))
 
-	err = filepath.Walk(root, func(path string, _ os.FileInfo, err error) error {
+	for _, lib := range libs {
+		if lib.Name == "std/flag" {
+			continue
+		}
+
+		r, err := fetchRepo(lib.Name)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		if strings.HasSuffix(path, pathSuffix) {
-			name := strings.TrimSuffix(path, pathSuffix)
-			name = strings.TrimPrefix(name, root)
+		list = append(list, r)
+	}
 
-			var r repo
-
-			if r, err = fetchRepo(name); err != nil {
-				return err
-			}
-
-			list = append(list, r)
-		}
-
-		return nil
-	})
 	if err != nil {
 		return nil, fmt.Errorf("could not list repositories: %w", err)
 	}
@@ -112,18 +107,18 @@ func fetchRepo(name string) (repo, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return repo{}, fmt.Errorf("could not fetch repository: %w", err)
+		return repo{}, fmt.Errorf("could not fetch repo '%s': %w", name, err)
 	}
 	defer resp.Body.Close()
 
 	r := repo{}
 	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		return repo{}, fmt.Errorf("could not decode response: %w", err)
+		return repo{}, fmt.Errorf("could not decode response for repo '%s': %w", name, err)
 	}
 
 	t, err := time.Parse(time.RFC3339, r.PushedAt)
 	if err != nil {
-		return repo{}, fmt.Errorf("could not parse PushedAt %q, %w", r.PushedAt, err)
+		return repo{}, fmt.Errorf("could not parse repo '%s' field PushedAt %q, %w", name, r.PushedAt, err)
 	}
 
 	r.PushedAtFormatted = relative.Time(t)
