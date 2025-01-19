@@ -51,6 +51,7 @@ IDs are assigned as code to test for each specification is written.
 |     | `--help`              |                                                    | display help                          |                                 |
 |     | `--help`              |                                                    | display long help                     |                                 |
 |     | `.+( .+)*`            | `arg1 arg2 arg3`                                   | { "args": ["arg1", "arg2", "arg3"] }  |                                 |
+|     | `..+`                 | `i` or `install`                                   | { "args": ["install"] }               | arguments / subcommands aliases |
 |     | value validation      |                                                    |                                       |                                 |
 |     | value type validation |                                                    |                                       |                                 |
 |     | subcommands           |                                                    |                                       |                                 |
