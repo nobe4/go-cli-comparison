@@ -27,11 +27,13 @@ func TestMain(t *testing.T) {
 			bin := build(t, lib)
 
 			for _, test := range tests {
-				t.Run(strings.Join(test.args, " "), func(t *testing.T) {
-					got := run(t, bin, test.args)
+				t.Run(strings.Join(test.Args, " "), func(t *testing.T) {
+					got := run(t, bin, test.Args)
 
-					if !test.want.Equal(got) {
-						t.Fatalf("want Options to be %v, got: %v", test.want, got)
+					t.Log(test.Location())
+
+					if !test.Want.Equal(got) {
+						t.Fatalf("want Options to be %v, got: %v", test.Want, got)
 					}
 				})
 			}

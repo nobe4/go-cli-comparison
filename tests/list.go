@@ -3,51 +3,48 @@ package test
 
 import "github.com/nobe4/go-cli-comparison/internal/spec"
 
-var tests = []struct {
-	args []string
-	want spec.Options
-}{
+var tests = []spec.Test{
 	{
-		want: spec.Options{},
+		Want: spec.Options{},
 	},
 
 	// A
 	{
-		args: []string{"-a"},
-		want: spec.Options{A: true},
+		Args: []string{"-a"},
+		Want: spec.Options{A: true},
 	},
 
 	// B
 	{
-		args: []string{"-b", "-b", "-b"},
-		want: spec.Options{B: 3},
+		Args: []string{"-b", "-b", "-b"},
+		Want: spec.Options{B: 3},
 	},
 
 	// C
 	{
-		args: []string{"-c", "a"},
-		want: spec.Options{C: "a"},
+		Args: []string{"-c", "a"},
+		Want: spec.Options{C: "a"},
 	},
 	{
-		args: []string{"-ca"},
-		want: spec.Options{C: "a"},
+		Args: []string{"-ca"},
+		Want: spec.Options{C: "a"},
 	},
 	{
-		args: []string{"-c=a"},
-		want: spec.Options{C: "a"},
+		Args: []string{"-c=a"},
+		Want: spec.Options{C: "a"},
 	},
 
 	// D
 	{
-		args: []string{"-d", "a"},
-		want: spec.Options{D: []string{"a"}},
+		Args: []string{"-d", "a"},
+		Want: spec.Options{D: []string{"a"}},
 	},
 	{
-		args: []string{"-d", "a", "-d", "a"},
-		want: spec.Options{D: []string{"a", "a"}},
+		Args: []string{"-d", "a", "-d", "a"},
+		Want: spec.Options{D: []string{"a", "a"}},
 	},
 	{
-		args: []string{"-d", "a", "-d", "b"},
-		want: spec.Options{D: []string{"a", "b"}},
+		Args: []string{"-d", "a", "-d", "b"},
+		Want: spec.Options{D: []string{"a", "b"}},
 	},
 }

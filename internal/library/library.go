@@ -13,7 +13,7 @@ const (
 	librariesPath = "libraries/"
 )
 
-var errNoProjectRoot = errors.New("could not find the project root go.mod")
+var ErrNoProjectRoot = errors.New("could not find the project root go.mod")
 
 type Library struct {
 	Name           string
@@ -22,7 +22,7 @@ type Library struct {
 }
 
 func List() ([]Library, error) {
-	root, err := projectRoot()
+	root, err := ProjectRoot()
 	if err != nil {
 		return nil, fmt.Errorf("could not get the project root: %w", err)
 	}
@@ -56,7 +56,7 @@ func List() ([]Library, error) {
 	return list, nil
 }
 
-func projectRoot() (string, error) {
+func ProjectRoot() (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {
 		return "", fmt.Errorf("could not get the working directory: %w", err)
@@ -79,5 +79,5 @@ func projectRoot() (string, error) {
 		dir = newDir
 	}
 
-	return "", errNoProjectRoot
+	return "", ErrNoProjectRoot
 }
