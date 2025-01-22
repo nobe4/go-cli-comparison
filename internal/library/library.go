@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/nobe4/go-cli-comparison/internal/root"
-	"github.com/nobe4/go-cli-comparison/internal/spec"
 )
 
 const (
@@ -19,7 +18,6 @@ type Library struct {
 	Name           string
 	NormalizedName string
 	Path           string
-	Tests          []spec.Test
 }
 
 func List() ([]Library, error) {

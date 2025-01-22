@@ -13,6 +13,7 @@ import (
 
 	"github.com/nobe4/go-cli-comparison/internal/library"
 	"github.com/nobe4/go-cli-comparison/internal/relative"
+	"github.com/nobe4/go-cli-comparison/internal/result"
 )
 
 const (
@@ -22,10 +23,16 @@ const (
 
 	marker         = "<!-- marker:comparison-table -->"
 	readmeTemplate = marker + `
-| repo | last-commit | stars |
-| --- | --- | --- |
+| repo | tests | last-commit | stars |
+| --- | --- | --- | --- |
 {{ range . -}}
-| [{{ .FullName }}]({{ .HTMLURL }}) | {{ .PushedAtFormatted }} | {{ .StargazerCount }} |
+| [{{ .FullName }}]({{ .HTMLURL }}) |
+{{- range .Tests }}
+    {{- if . }}✅{{- else }}❌{{- end -}}
+{{ end -}}
+{{ .TestsTotal -}}
+| {{- .PushedAtFormatted -}} |
+{{- .StargazerCount }} |
 {{ end -}}
 ` + marker
 )
@@ -41,6 +48,8 @@ type repo struct {
 	PushedAtFormatted string `json:"-"`
 	StargazerCount    int    `json:"stargazers_count"`
 	HTMLURL           string `json:"html_url"`
+	Tests             []bool `json:"tests"`
+	TestsTotal        int    `json:"tests_total"`
 }
 
 func main() {
@@ -49,6 +58,10 @@ func main() {
 	var repos []repo
 
 	if repos, err = listRepositories(); err != nil {
+		panic(err)
+	}
+
+	if err := populateTests(repos); err != nil {
 		panic(err)
 	}
 
@@ -66,13 +79,15 @@ func listRepositories() ([]repo, error) {
 	list := make([]repo, 0, len(libs))
 
 	for _, lib := range libs {
-		if lib.Name == "std/flag" {
-			continue
+		r := repo{
+			FullName: lib.Name,
 		}
 
-		r, err := fetchRepo(lib.Name)
-		if err != nil {
-			return nil, err
+		if lib.Name != "std/flag" {
+			r, err = fetchRepo(lib.Name)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		list = append(list, r)
@@ -124,6 +139,45 @@ func fetchRepo(name string) (repo, error) {
 	r.PushedAtFormatted = relative.Time(t)
 
 	return r, nil
+}
+
+func populateTests(repos []repo) error {
+	content, err := os.ReadFile("tests/results.txt")
+	if err != nil {
+		return err
+	}
+
+	r := result.Result{}
+	result.Unmarshal(content, &r)
+
+	for i, row := range r {
+		repos[i].Tests = row
+
+		count := 0
+		for _, cell := range row {
+			if cell {
+				count++
+			}
+		}
+
+		repos[i].TestsTotal = count
+	}
+
+	return nil
+
+	// TODO
+	//		fmt.Printf("\n| test |  total |\n")
+	//		fmt.Printf("| --- |  --- |\n")
+	//		for j, test := range tests {
+	//			count := 0
+	//			for i, _ := range libs {
+	//				if results[i][j] {
+	//					count++
+	//				}
+	//			}
+	//			fmt.Printf("| %s | %d |\n", strings.Join(test.Args, " "), count)
+	//		}
+	//	})
 }
 
 func updateReadme(repos []repo) error {

@@ -2,15 +2,16 @@ package test
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"log"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/nobe4/go-cli-comparison/internal/library"
+	"github.com/nobe4/go-cli-comparison/internal/result"
 	"github.com/nobe4/go-cli-comparison/internal/spec"
 )
 
@@ -22,14 +23,7 @@ func TestMain(t *testing.T) {
 		t.Fatalf("could not get the list of libraries: %v", err)
 	}
 
-	results := [][]bool{}
-	for i := range libs {
-		results = append(results, []bool{})
-
-		for _ = range tests {
-			results[i] = append(results[i], false)
-		}
-	}
+	results := result.New(len(libs), len(tests))
 
 	for i, lib := range libs {
 		t.Run(lib.Name, func(t *testing.T) {
@@ -60,32 +54,8 @@ func TestMain(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		fmt.Printf("| lib | tests | total |\n")
-		fmt.Printf("| --- | --- | --- |\n")
-		for i, lib := range libs {
-			fmt.Printf("| %s | ", lib.Name)
-			count := 0
-			for j, _ := range tests {
-				if results[i][j] {
-					fmt.Printf("✅")
-					count++
-				} else {
-					fmt.Printf("❌")
-				}
-			}
-			fmt.Printf(" | %d |\n", count)
-		}
-
-		fmt.Printf("\n| test |  total |\n")
-		fmt.Printf("| --- |  --- |\n")
-		for j, test := range tests {
-			count := 0
-			for i, _ := range libs {
-				if results[i][j] {
-					count++
-				}
-			}
-			fmt.Printf("| %s | %d |\n", strings.Join(test.Args, " "), count)
+		if err := os.WriteFile("results.txt", results.Marshal(), 0o600); err != nil {
+			t.Fatalf("could not write results to file: %v", err)
 		}
 	})
 }
@@ -129,35 +99,41 @@ func run(t *testing.T, bin string, args []string) (spec.Options, bool) {
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
 		t.Logf("could not get stderr pipe: %v", err)
+
 		return spec.Options{}, false
 	}
 
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		t.Logf("could not get stdout pipe: %v", err)
+
 		return spec.Options{}, false
 	}
 
 	if err := cmd.Start(); err != nil {
 		t.Logf("could not run: %v", err)
+
 		return spec.Options{}, false
 	}
 
 	stdout, err := io.ReadAll(stdoutPipe)
 	if err != nil {
 		t.Logf("could not read stdout: %v", err)
+
 		return spec.Options{}, false
 	}
 
 	stderr, err := io.ReadAll(stderrPipe)
 	if err != nil {
 		t.Logf("could not read stderr: %v", err)
+
 		return spec.Options{}, false
 	}
 
 	if err := cmd.Wait(); err != nil {
 		t.Logf("stderr:\n%s", stderr)
 		t.Logf("could not wait for: %v", err)
+
 		return spec.Options{}, false
 	}
 
@@ -167,6 +143,7 @@ func run(t *testing.T, bin string, args []string) (spec.Options, bool) {
 	o, err := spec.Unmarshal(stdout)
 	if err != nil {
 		t.Logf("could not unmarshal output '%s': %v", stdout, err)
+
 		return spec.Options{}, false
 	}
 
