@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/nobe4/go-cli-comparison/internal/library"
+	"github.com/nobe4/go-cli-comparison/internal/root"
 )
 
 type Test struct {
@@ -17,14 +17,13 @@ type Test struct {
 
 var errNoTestList = errors.New("could not find the test list")
 
-// Link returns the lines containing the test.
 func (t Test) Location() (string, error) {
-	root, err := library.ProjectRoot()
+	r, err := root.Root()
 	if err != nil {
-		return "", library.ErrNoProjectRoot
+		return "", root.ErrNoProjectRoot
 	}
 
-	path := filepath.Join(root, "tests", "list.go")
+	path := filepath.Join(r, "tests", "list.go")
 
 	rawContent, err := os.ReadFile(path)
 	if err != nil {
@@ -67,5 +66,9 @@ func (t Test) Location() (string, error) {
 		return "", nil
 	}
 
-	return fmt.Sprintf("https://github.com/nobe4/go-cli-comparison/blob/main/tests/list.go#L%d-L%d", start, end), nil
+	return fmt.Sprintf(
+		"https://github.com/nobe4/go-cli-comparison/blob/main/tests/list.go#L%d-L%d",
+		// GitHub use 1-indexed lines
+		start+1, end+1,
+	), nil
 }
