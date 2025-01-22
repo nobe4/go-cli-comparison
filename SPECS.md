@@ -12,6 +12,7 @@ IDs are assigned as code to test for each specification is written.
 | id  | regex / name          | example                      | expected parsing                       | comments                        |
 | --- | ---                   | ---                          | ---                                    | ---                             |
 |     | `-\w`                 | `-x`                         | `{ "x": true }`                        |                                 |
+|     | `-[A-Z]`              | `-X`                         | `{ "x": false }`                       |                                 |
 |     | `(-\w)( \1)*`         | `-x -x -x`                   | `{ "x": 3 }`                           |                                 |
 |     | `-(\w)(\1)*`          | `-xxx`                       | `{ "x": 3 }`                           |                                 |
 |     | `-\w+`                | `-xyz`                       | `{ "x": true, "y": true, "z": true }`  |                                 |
