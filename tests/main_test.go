@@ -4,9 +4,11 @@ import (
 	"context"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/nobe4/go-cli-comparison/internal/library"
+	"github.com/nobe4/go-cli-comparison/internal/spec"
 )
 
 func TestMain(t *testing.T) {
@@ -24,11 +26,11 @@ func TestMain(t *testing.T) {
 			bin := build(t, lib)
 
 			for _, test := range tests {
-				t.Run(test.id, func(t *testing.T) {
+				t.Run(strings.Join(test.args, " "), func(t *testing.T) {
 					got := run(t, bin, test.args)
 
-					if got != test.want {
-						t.Fatalf("expected output to be '%s', got: '%s'", test.want, got)
+					if !test.want.Equal(got) {
+						t.Fatalf("want Options to be %v, got: %v", test.want, got)
 					}
 				})
 			}
@@ -61,7 +63,7 @@ func build(t *testing.T, lib library.Library) string {
 	return bin
 }
 
-func run(t *testing.T, bin string, args []string) string {
+func run(t *testing.T, bin string, args []string) spec.Options {
 	t.Helper()
 
 	cmd := exec.CommandContext(
@@ -70,11 +72,18 @@ func run(t *testing.T, bin string, args []string) string {
 		args...,
 	)
 
+	t.Logf("running %s with args %v", bin, args)
+
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("out: %s", out)
-		t.Fatalf("could not run %s: %v", bin, err)
+		t.Fatalf("could not run: %v", err)
 	}
 
-	return string(out)
+	o, err := spec.Unmarshal(out)
+	if err != nil {
+		t.Fatalf("could not unmarshal output: %v", err)
+	}
+
+	return o
 }

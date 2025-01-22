@@ -164,7 +164,7 @@ func TestUnmarshal(t *testing.T) {
 				test.checkErr = errIsNil
 			}
 
-			o, err := Unmarshal(test.s)
+			o, err := Unmarshal([]byte(test.s))
 			test.checkErr(t, err)
 
 			if err == nil && o.Equal(test.o) != test.want {
@@ -238,7 +238,7 @@ func TestMarshal(t *testing.T) {
 
 			o2, err := Unmarshal(s)
 			if err != nil {
-				t.Errorf("could not unmarshal the marshalled Options: %v", err)
+				t.Errorf("could not unmarshal the marshaled Options: %v", err)
 			}
 
 			if test.o.Equal(o2) != test.want {

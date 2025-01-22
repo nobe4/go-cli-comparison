@@ -6,9 +6,7 @@ import (
 	"fmt"
 )
 
-var (
-	errInvalidOptions = errors.New("invalid options")
-)
+var errInvalidOptions = errors.New("invalid options")
 
 type Options struct {
 	// desc:      Boolean toggle, default to false.
@@ -66,21 +64,29 @@ func (o Options) Equal(o2 Options) bool {
 	return true
 }
 
-func Unmarshal(s string) (Options, error) {
+func Unmarshal(s []byte) (Options, error) {
 	o := Options{}
 
-	if err := json.Unmarshal([]byte(s), &o); err != nil {
-		return o, fmt.Errorf("failed to unmarshal %w: %q", errInvalidOptions, err)
+	if err := json.Unmarshal(s, &o); err != nil {
+		return o, fmt.Errorf("failed to unmarshal %w: %w", errInvalidOptions, err)
 	}
 
 	return o, nil
 }
 
-func (o Options) Marshal() (string, error) {
-	b, err := json.Marshal(o)
+func (o Options) Marshal() ([]byte, error) {
+	b, err := json.MarshalIndent(o, "", "  ")
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal: %w %q", errInvalidOptions, err)
+		return b, fmt.Errorf("failed to marshal %w: %w", errInvalidOptions, err)
 	}
 
-	return string(b), nil
+	return b, nil
+}
+
+func (o Options) String() string {
+	b, err := o.Marshal()
+	if err != nil {
+		return fmt.Sprintf("failed to marshal: %v", err)
+	}
+	return string(b)
 }

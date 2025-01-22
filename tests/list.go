@@ -1,18 +1,17 @@
 package test
 
+import "github.com/nobe4/go-cli-comparison/internal/spec"
+
 //nolint:gochecknoglobals // This is better than a local var.
 var tests = []struct {
-	id   string
 	args []string
-	want string
+	want spec.Options
 }{
 	{
-		id:   "0",
-		want: "aFlag: 0\n",
+		want: spec.Options{},
 	},
 	{
-		id:   "1",
-		args: []string{"-a", "1"},
-		want: "aFlag: 1\n",
+		args: []string{"-a"},
+		want: spec.Options{A: true},
 	},
 }
