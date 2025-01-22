@@ -2,7 +2,9 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"log"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -20,7 +22,13 @@ func TestMain(t *testing.T) {
 		t.Fatalf("could not get the list of libraries: %v", err)
 	}
 
-	for _, lib := range libs {
+	libs2 := []library.Library{}
+
+	for i, lib := range libs {
+		libs2 = append(libs2, library.Library{
+			Name: lib.Name,
+		})
+
 		t.Run(lib.Name, func(t *testing.T) {
 			t.Parallel()
 
@@ -28,17 +36,45 @@ func TestMain(t *testing.T) {
 
 			for _, test := range tests {
 				t.Run(strings.Join(test.Args, " "), func(t *testing.T) {
-					got := run(t, bin, test.Args)
+					got, success := run(t, bin, test.Args)
 
 					t.Log(test.Location())
 
-					if !test.Want.Equal(got) {
+					if success {
+						success = test.Want.Equal(got)
+					}
+
+					libs2[i].Tests = append(libs2[i].Tests, spec.Test{
+						Args:    test.Args,
+						Want:    test.Want,
+						Success: success,
+					})
+					log.Printf("success: %v", lib)
+
+					if !success {
 						t.Fatalf("want Options to be %v, got: %v", test.Want, got)
 					}
 				})
 			}
 		})
 	}
+
+	t.Cleanup(func() {
+		fmt.Printf("| lib | tests |\n")
+		fmt.Printf("| --- | --- |\n")
+		for _, lib := range libs2 {
+			fmt.Printf("| %s | ", lib.Name)
+
+			for _, test := range lib.Tests {
+				if test.Success {
+					fmt.Printf("✅")
+				} else {
+					fmt.Printf("❌")
+				}
+			}
+			fmt.Printf("|\n")
+		}
+	})
 }
 
 func build(t *testing.T, lib library.Library) string {
@@ -66,7 +102,7 @@ func build(t *testing.T, lib library.Library) string {
 	return bin
 }
 
-func run(t *testing.T, bin string, args []string) spec.Options {
+func run(t *testing.T, bin string, args []string) (spec.Options, bool) {
 	t.Helper()
 
 	cmd := exec.CommandContext(
@@ -79,31 +115,37 @@ func run(t *testing.T, bin string, args []string) spec.Options {
 
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
-		t.Fatalf("could not get stderr pipe: %v", err)
+		t.Logf("could not get stderr pipe: %v", err)
+		return spec.Options{}, false
 	}
 
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		t.Fatalf("could not get stdout pipe: %v", err)
+		t.Logf("could not get stdout pipe: %v", err)
+		return spec.Options{}, false
 	}
 
 	if err := cmd.Start(); err != nil {
-		t.Fatalf("could not run: %v", err)
+		t.Logf("could not run: %v", err)
+		return spec.Options{}, false
 	}
 
 	stdout, err := io.ReadAll(stdoutPipe)
 	if err != nil {
 		t.Logf("could not read stdout: %v", err)
+		return spec.Options{}, false
 	}
 
 	stderr, err := io.ReadAll(stderrPipe)
 	if err != nil {
 		t.Logf("could not read stderr: %v", err)
+		return spec.Options{}, false
 	}
 
 	if err := cmd.Wait(); err != nil {
 		t.Logf("stderr:\n%s", stderr)
-		t.Fatalf("could not wait for: %v", err)
+		t.Logf("could not wait for: %v", err)
+		return spec.Options{}, false
 	}
 
 	t.Logf("stderr:\n%s", stderr)
@@ -111,8 +153,9 @@ func run(t *testing.T, bin string, args []string) spec.Options {
 
 	o, err := spec.Unmarshal(stdout)
 	if err != nil {
-		t.Fatalf("could not unmarshal output '%s': %v", stdout, err)
+		t.Logf("could not unmarshal output '%s': %v", stdout, err)
+		return spec.Options{}, false
 	}
 
-	return o
+	return o, true
 }

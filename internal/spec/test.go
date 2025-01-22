@@ -11,8 +11,9 @@ import (
 )
 
 type Test struct {
-	Args []string
-	Want Options
+	Args    []string
+	Want    Options
+	Success bool
 }
 
 var errNoTestList = errors.New("could not find the test list")
