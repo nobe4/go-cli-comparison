@@ -73,7 +73,7 @@ func (t Test) Location() string {
 	}
 
 	t.location = fmt.Sprintf(
-		"https://github.com/nobe4/go-cli-comparison/blob/main/tests/list.go#L%d-L%d",
+		"https://github.com/nobe4/go-cli-comparison/blob/main/internal/spec/list.go#L%d-L%d",
 		// GitHub use 1-indexed lines
 		start+1, end+1,
 	)
