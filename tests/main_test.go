@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"io"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -74,15 +75,41 @@ func run(t *testing.T, bin string, args []string) spec.Options {
 
 	t.Logf("running %s with args %v", bin, args)
 
-	out, err := cmd.CombinedOutput()
+	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
-		t.Logf("out: %s", out)
+		t.Fatalf("could not get stderr pipe: %v", err)
+	}
+
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		t.Fatalf("could not get stdout pipe: %v", err)
+	}
+
+	if err := cmd.Start(); err != nil {
 		t.Fatalf("could not run: %v", err)
 	}
 
-	o, err := spec.Unmarshal(out)
+	stdout, err := io.ReadAll(stdoutPipe)
 	if err != nil {
-		t.Fatalf("could not unmarshal output: %v", err)
+		t.Logf("could not read stdout: %v", err)
+	}
+
+	stderr, err := io.ReadAll(stderrPipe)
+	if err != nil {
+		t.Logf("could not read stderr: %v", err)
+	}
+
+	if err := cmd.Wait(); err != nil {
+		t.Logf("stderr:\n%s", stderr)
+		t.Fatalf("could not wait for: %v", err)
+	}
+
+	t.Logf("stderr:\n%s", stderr)
+	t.Logf("stdout:\n%s", stdout)
+
+	o, err := spec.Unmarshal(stdout)
+	if err != nil {
+		t.Fatalf("could not unmarshal output '%s': %v", stdout, err)
 	}
 
 	return o
