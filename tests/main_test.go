@@ -22,19 +22,22 @@ func TestMain(t *testing.T) {
 		t.Fatalf("could not get the list of libraries: %v", err)
 	}
 
-	libs2 := []library.Library{}
+	results := [][]bool{}
+	for i := range libs {
+		results = append(results, []bool{})
+
+		for _ = range tests {
+			results[i] = append(results[i], false)
+		}
+	}
 
 	for i, lib := range libs {
-		libs2 = append(libs2, library.Library{
-			Name: lib.Name,
-		})
-
 		t.Run(lib.Name, func(t *testing.T) {
 			t.Parallel()
 
 			bin := build(t, lib)
 
-			for _, test := range tests {
+			for j, test := range tests {
 				t.Run(strings.Join(test.Args, " "), func(t *testing.T) {
 					got, success := run(t, bin, test.Args)
 
@@ -44,11 +47,8 @@ func TestMain(t *testing.T) {
 						success = test.Want.Equal(got)
 					}
 
-					libs2[i].Tests = append(libs2[i].Tests, spec.Test{
-						Args:    test.Args,
-						Want:    test.Want,
-						Success: success,
-					})
+					results[i][j] = success
+
 					log.Printf("success: %v", lib)
 
 					if !success {
@@ -60,19 +60,32 @@ func TestMain(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		fmt.Printf("| lib | tests |\n")
-		fmt.Printf("| --- | --- |\n")
-		for _, lib := range libs2 {
+		fmt.Printf("| lib | tests | total |\n")
+		fmt.Printf("| --- | --- | --- |\n")
+		for i, lib := range libs {
 			fmt.Printf("| %s | ", lib.Name)
-
-			for _, test := range lib.Tests {
-				if test.Success {
+			count := 0
+			for j, _ := range tests {
+				if results[i][j] {
 					fmt.Printf("✅")
+					count++
 				} else {
 					fmt.Printf("❌")
 				}
 			}
-			fmt.Printf("|\n")
+			fmt.Printf(" | %d |\n", count)
+		}
+
+		fmt.Printf("\n| test |  total |\n")
+		fmt.Printf("| --- |  --- |\n")
+		for j, test := range tests {
+			count := 0
+			for i, _ := range libs {
+				if results[i][j] {
+					count++
+				}
+			}
+			fmt.Printf("| %s | %d |\n", strings.Join(test.Args, " "), count)
 		}
 	})
 }
