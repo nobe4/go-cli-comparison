@@ -88,5 +88,6 @@ func (o Options) String() string {
 	if err != nil {
 		return fmt.Sprintf("failed to marshal: %v", err)
 	}
+
 	return string(b)
 }

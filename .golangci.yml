@@ -63,6 +63,7 @@ linters-settings:
         allow:
           - $gostd
           - github.com/nobe4/go-cli-comparison
+          - github.com/spf13/cobra
 
   revive:
     enable-all-rules: true
