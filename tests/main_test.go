@@ -3,7 +3,6 @@ package test
 import (
 	"context"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,7 +22,7 @@ func TestMain(t *testing.T) {
 		t.Fatalf("could not get the list of libraries: %v", err)
 	}
 
-	results := result.New(len(libs), len(tests))
+	results := result.New(len(libs), len(spec.Tests))
 
 	for i, lib := range libs {
 		t.Run(lib.Name, func(t *testing.T) {
@@ -31,7 +30,7 @@ func TestMain(t *testing.T) {
 
 			bin := build(t, lib)
 
-			for j, test := range tests {
+			for j, test := range spec.Tests {
 				t.Run(strings.Join(test.Args, " "), func(t *testing.T) {
 					got, success := run(t, bin, test.Args)
 
@@ -42,8 +41,6 @@ func TestMain(t *testing.T) {
 					}
 
 					results[i][j] = success
-
-					log.Printf("success: %v", lib)
 
 					if !success {
 						t.Fatalf("want Options to be %v, got: %v", test.Want, got)

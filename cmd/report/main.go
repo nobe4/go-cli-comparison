@@ -11,9 +11,10 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/nobe4/go-cli-comparison/internal/format"
 	"github.com/nobe4/go-cli-comparison/internal/library"
-	"github.com/nobe4/go-cli-comparison/internal/relative"
 	"github.com/nobe4/go-cli-comparison/internal/result"
+	"github.com/nobe4/go-cli-comparison/internal/spec"
 )
 
 const (
@@ -23,16 +24,13 @@ const (
 
 	marker         = "<!-- marker:comparison-table -->"
 	readmeTemplate = marker + `
-| repo | tests | last-commit | stars |
+| repo | tests | updated | stars |
 | --- | --- | --- | --- |
 {{ range . -}}
 | [{{ .FullName }}]({{ .HTMLURL }}) |
-{{- range .Tests }}
-    {{- if . }}✅{{- else }}❌{{- end -}}
-{{ end -}}
-{{ .TestsTotal -}}
+{{- range .Tests }} {{ . }} {{ end -}}
 | {{- .PushedAtFormatted -}} |
-{{- .StargazerCount }} |
+{{- .StargazerCountFormatted }} |
 {{ end -}}
 ` + marker
 )
@@ -43,13 +41,13 @@ var (
 )
 
 type repo struct {
-	FullName          string `json:"full_name"`
-	PushedAt          string `json:"pushed_at"`
-	PushedAtFormatted string `json:"-"`
-	StargazerCount    int    `json:"stargazers_count"`
-	HTMLURL           string `json:"html_url"`
-	Tests             []bool `json:"tests"`
-	TestsTotal        int    `json:"tests_total"`
+	FullName                string   `json:"full_name"`
+	PushedAt                string   `json:"pushed_at"`
+	PushedAtFormatted       string   `json:"-"`
+	StargazerCount          int      `json:"stargazers_count"`
+	StargazerCountFormatted string   `json:"stargazers_count_formatted"`
+	HTMLURL                 string   `json:"html_url"`
+	Tests                   []string `json:"tests"`
 }
 
 func main() {
@@ -136,7 +134,8 @@ func fetchRepo(name string) (repo, error) {
 		return repo{}, fmt.Errorf("could not parse repo '%s' field PushedAt %q, %w", name, r.PushedAt, err)
 	}
 
-	r.PushedAtFormatted = relative.Time(t)
+	r.PushedAtFormatted = format.Time(t)
+	r.StargazerCountFormatted = format.Count(r.StargazerCount)
 
 	return r, nil
 }
@@ -151,16 +150,21 @@ func populateTests(repos []repo) error {
 	result.Unmarshal(content, &r)
 
 	for i, row := range r {
-		repos[i].Tests = row
+		repos[i].Tests = make([]string, len(row))
 
-		count := 0
-		for _, cell := range row {
+		for j, cell := range row {
+			s := "["
+
 			if cell {
-				count++
+				s += "✅"
+			} else {
+				s += "❌"
 			}
-		}
 
-		repos[i].TestsTotal = count
+			s += "](" + spec.Tests[j].Location() + ")"
+
+			repos[i].Tests[j] = s
+		}
 	}
 
 	return nil

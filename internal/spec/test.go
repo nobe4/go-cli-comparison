@@ -11,24 +11,29 @@ import (
 )
 
 type Test struct {
-	Args    []string
-	Want    Options
-	Success bool
+	Args     []string
+	Want     Options
+	Success  bool
+	location string
 }
 
 var errNoTestList = errors.New("could not find the test list")
 
-func (t Test) Location() (string, error) {
-	r, err := root.Root()
-	if err != nil {
-		return "", root.ErrNoProjectRoot
+func (t Test) Location() string {
+	if t.location != "" {
+		return t.location
 	}
 
-	path := filepath.Join(r, "tests", "list.go")
+	r, err := root.Root()
+	if err != nil {
+		return fmt.Sprintf("could not get the root: %v", err)
+	}
+
+	path := filepath.Join(r, "internal", "spec", "list.go")
 
 	rawContent, err := os.ReadFile(path)
 	if err != nil {
-		return "", fmt.Errorf("%w %s: %w", errNoTestList, path, err)
+		return fmt.Sprintf("%v %s: %v", errNoTestList, path, err)
 	}
 
 	content := string(rawContent)
@@ -64,12 +69,14 @@ func (t Test) Location() (string, error) {
 	}
 
 	if !found {
-		return "", nil
+		return ""
 	}
 
-	return fmt.Sprintf(
+	t.location = fmt.Sprintf(
 		"https://github.com/nobe4/go-cli-comparison/blob/main/tests/list.go#L%d-L%d",
 		// GitHub use 1-indexed lines
 		start+1, end+1,
-	), nil
+	)
+
+	return t.location
 }
