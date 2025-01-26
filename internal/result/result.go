@@ -16,6 +16,18 @@ func New(h, w int) Result {
 	return results
 }
 
+func (r Result) Rotate() Result {
+	r2 := New(len(r[0]), len(r))
+
+	for i, row := range r {
+		for j, cell := range row {
+			r2[j][i] = cell
+		}
+	}
+
+	return r2
+}
+
 func (r Result) Equal(o Result) bool {
 	if len(r) != len(o) {
 		return false

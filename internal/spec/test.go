@@ -13,7 +13,6 @@ import (
 type Test struct {
 	Args     []string
 	Want     Options
-	Success  bool
 	location string
 }
 

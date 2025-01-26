@@ -5,6 +5,27 @@ import (
 	"testing"
 )
 
+func TestRotate(t *testing.T) {
+	t.Parallel()
+
+	tests := []Result{
+		Result{[]bool{false}},
+		Result{[]bool{false, true}, []bool{true, false}},
+	}
+
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			t.Parallel()
+
+			got := test.Rotate().Rotate()
+
+			if !test.Equal(got) {
+				t.Fatalf("want %v, got %v", test, got)
+			}
+		})
+	}
+}
+
 func TestMarshal(t *testing.T) {
 	t.Parallel()
 

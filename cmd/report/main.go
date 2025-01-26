@@ -6,8 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"text/template"
 	"time"
 
@@ -24,14 +27,30 @@ const (
 
 	marker         = "<!-- marker:comparison-table -->"
 	readmeTemplate = marker + `
-| repo | tests | updated | stars |
+| library | tests | updated | stars |
 | --- | --- | --- | --- |
-{{ range . -}}
-| [{{ .FullName }}]({{ .HTMLURL }}) |
-{{- range .Tests }} {{ . }} {{ end -}}
-| {{- .PushedAtFormatted -}} |
-{{- .StargazerCountFormatted }} |
-{{ end -}}
+{{ range $i, $row := .ResultByLibs -}}
+    {{- with index $.Libs $i -}}
+        |[{{ .Name }}]({{ .URL }})|
+        {{- range $j, $success := $row -}}
+                [{{- if $success }}✅{{ else }}❌{{ end -}}]({{(index $.Tests $j).Location}})
+            {{- end -}}
+        |{{ .LastUpdate -}}
+        |{{ .Stars }}|
+    {{- end }}
+{{ end }}
+
+| test | libraries |
+| --- | --- |
+{{ range $i, $row := .ResultByTests -}}
+    {{- with index $.Tests $i -}}
+        |{{ .Args }}|
+        {{- range $j, $success := $row -}}
+                [{{- if $success }}✅{{ else }}❌{{ end -}}]({{(index $.Libs $j).Location}})
+        {{- end -}}|
+    {{- end }}
+{{ end }}
+
 ` + marker
 )
 
@@ -40,65 +59,56 @@ var (
 	errNoToken  = errors.New("could not find the GITHUB_TOKEN environment variable")
 )
 
+type templateData struct {
+	Libs          []*library.Library
+	Tests         []spec.Test
+	ResultByLibs  result.Result
+	ResultByTests result.Result
+}
+
 type repo struct {
-	FullName                string   `json:"full_name"`
-	PushedAt                string   `json:"pushed_at"`
-	PushedAtFormatted       string   `json:"-"`
-	StargazerCount          int      `json:"stargazers_count"`
-	StargazerCountFormatted string   `json:"stargazers_count_formatted"`
-	HTMLURL                 string   `json:"html_url"`
-	Tests                   []string `json:"tests"`
+	PushedAt       string `json:"pushed_at"`
+	StargazerCount int    `json:"stargazers_count"`
 }
 
 func main() {
 	var err error
 
-	var repos []repo
-
-	if repos, err = listRepositories(); err != nil {
-		panic(err)
-	}
-
-	if err := populateTests(repos); err != nil {
-		panic(err)
-	}
-
-	if err := updateReadme(repos); err != nil {
-		panic(err)
-	}
-}
-
-func listRepositories() ([]repo, error) {
 	libs, err := library.List()
 	if err != nil {
-		return nil, fmt.Errorf("could not list libraries: %w", err)
+		log.Fatalf("could not list libraries: %q", err)
 	}
 
-	list := make([]repo, 0, len(libs))
-
-	for _, lib := range libs {
-		r := repo{
-			FullName: lib.Name,
-		}
-
-		if lib.Name != "std/flag" {
-			r, err = fetchRepo(lib.Name)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		list = append(list, r)
+	if err := populateStats(libs); err != nil {
+		panic(err)
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("could not list repositories: %w", err)
+	if err := updateReadme(libs); err != nil {
+		panic(err)
 	}
-
-	return list, nil
 }
 
-func fetchRepo(name string) (repo, error) {
+func populateStats(libs []*library.Library) error {
+	for _, lib := range libs {
+		slog.Info("populating stats", "lib", lib.Name)
+
+		if lib.URL == "" {
+			continue
+		}
+
+		if fullName, found := strings.CutPrefix(lib.URL, "https://github.com/"); found {
+			if err := populateGitHubStats(lib, fullName); err != nil {
+				return fmt.Errorf("could not populate stats for %s: %q", lib.URL, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func populateGitHubStats(lib *library.Library, name string) error {
+	slog.Info("populating stats from GitHub", "lib", lib.Name)
+
 	req, err := http.NewRequestWithContext(
 		context.TODO(),
 		http.MethodGet,
@@ -106,12 +116,12 @@ func fetchRepo(name string) (repo, error) {
 		nil,
 	)
 	if err != nil {
-		return repo{}, fmt.Errorf("could not create request: %w", err)
+		return fmt.Errorf("could not create request: %w", err)
 	}
 
 	token, found := os.LookupEnv("GITHUB_TOKEN")
 	if !found {
-		return repo{}, errNoToken
+		return errNoToken
 	}
 
 	req.SetBasicAuth("token", token)
@@ -120,78 +130,51 @@ func fetchRepo(name string) (repo, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return repo{}, fmt.Errorf("could not fetch repo '%s': %w", name, err)
+		return fmt.Errorf("could not fetch repo '%s': %w", name, err)
 	}
 	defer resp.Body.Close()
 
 	r := repo{}
 	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		return repo{}, fmt.Errorf("could not decode response for repo '%s': %w", name, err)
+		return fmt.Errorf("could not decode response for repo '%s': %w", name, err)
 	}
 
 	t, err := time.Parse(time.RFC3339, r.PushedAt)
 	if err != nil {
-		return repo{}, fmt.Errorf("could not parse repo '%s' field PushedAt %q, %w", name, r.PushedAt, err)
+		return fmt.Errorf("could not parse repo '%s' field PushedAt %q, %w", name, r.PushedAt, err)
 	}
 
-	r.PushedAtFormatted = format.Time(t)
-	r.StargazerCountFormatted = format.Count(r.StargazerCount)
+	lib.LastUpdate = format.Time(t)
+	lib.Stars = format.Count(r.StargazerCount)
 
-	return r, nil
+	return nil
 }
 
-func populateTests(repos []repo) error {
+func updateReadme(libs []*library.Library) error {
+	slog.Info("updating README")
+
 	content, err := os.ReadFile("tests/results.txt")
 	if err != nil {
-		return err
+		return fmt.Errorf("could not read tests/results.txt: %w\ntry: go test ./...", err)
 	}
 
 	r := result.Result{}
 	result.Unmarshal(content, &r)
 
-	for i, row := range r {
-		repos[i].Tests = make([]string, len(row))
-
-		for j, cell := range row {
-			s := "["
-
-			if cell {
-				s += "✅"
-			} else {
-				s += "❌"
-			}
-
-			s += "](" + spec.Tests[j].Location() + ")"
-
-			repos[i].Tests[j] = s
-		}
-	}
-
-	return nil
-
-	// TODO
-	//		fmt.Printf("\n| test |  total |\n")
-	//		fmt.Printf("| --- |  --- |\n")
-	//		for j, test := range tests {
-	//			count := 0
-	//			for i, _ := range libs {
-	//				if results[i][j] {
-	//					count++
-	//				}
-	//			}
-	//			fmt.Printf("| %s | %d |\n", strings.Join(test.Args, " "), count)
-	//		}
-	//	})
-}
-
-func updateReadme(repos []repo) error {
 	t, err := template.New("readme table").Parse(readmeTemplate)
 	if err != nil {
 		return fmt.Errorf("could not parse template: %w", err)
 	}
 
+	templateData := templateData{
+		Libs:          libs,
+		Tests:         spec.Tests,
+		ResultByLibs:  r,
+		ResultByTests: r.Rotate(),
+	}
+
 	table := bytes.Buffer{}
-	if err := t.Execute(&table, repos); err != nil {
+	if err := t.Execute(&table, templateData); err != nil {
 		return fmt.Errorf("could not execute template: %w", err)
 	}
 

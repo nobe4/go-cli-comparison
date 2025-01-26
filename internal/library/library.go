@@ -1,6 +1,7 @@
 package library
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -17,32 +18,55 @@ const (
 type Library struct {
 	Name           string
 	NormalizedName string
+	URL            string
+	Location       string
 	Path           string
+	Stars          string
+	LastUpdate     string
 }
 
-func List() ([]Library, error) {
+func List() ([]*Library, error) {
 	projectRoot, err := root.Root()
 	if err != nil {
 		return nil, fmt.Errorf("could not get the project root: %w", err)
 	}
 
-	projectRoot = filepath.Join(projectRoot, librariesPath) + "/"
+	librariesPath := filepath.Join(projectRoot, librariesPath) + "/"
 
-	var list []Library
+	var list []*Library
 
-	err = filepath.Walk(projectRoot, func(path string, _ os.FileInfo, err error) error {
+	err = filepath.Walk(librariesPath, func(path string, _ os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
 		if strings.HasSuffix(path, pathSuffix) {
-			name := strings.TrimSuffix(path, pathSuffix)
-			name = strings.TrimPrefix(name, projectRoot)
+			file, err := os.ReadFile(path)
+			if err != nil {
+				return fmt.Errorf("could not read the file %s: %w", path, err)
+			}
 
-			list = append(list, Library{
+			name := ""
+			url := ""
+
+			for _, line := range bytes.Split(file, []byte("\n")) {
+				if v, found := bytes.CutPrefix(line, []byte("Name = ")); found {
+					name = string(bytes.TrimSpace(v))
+				}
+
+				if v, found := bytes.CutPrefix(line, []byte("URL  = ")); found {
+					url = string(bytes.TrimSpace(v))
+				}
+			}
+
+			path, _ := strings.CutPrefix(path, projectRoot+"/")
+
+			list = append(list, &Library{
 				Name:           name,
+				URL:            url,
 				NormalizedName: strings.ReplaceAll(name, "/", "_"),
 				Path:           path,
+				Location:       "https://github.com/nobe4/go-cli-comparison/blob/main/" + path,
 			})
 		}
 
