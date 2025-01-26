@@ -25,7 +25,14 @@ func Time(t time.Time) string {
 		return "this year"
 	}
 
-	return fmt.Sprintf("%d years ago", int(ago.Hours()/24/365))
+	yearCount := int(ago.Hours() / 24 / 365)
+
+	unit := "year"
+	if yearCount > 1 {
+		unit = "years"
+	}
+
+	return fmt.Sprintf("%d %s ago", yearCount, unit)
 }
 
 //nolint:mnd // All those numbers are fine.
