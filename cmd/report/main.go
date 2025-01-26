@@ -44,7 +44,7 @@ const (
 | --- | --- |
 {{ range $i, $row := .ResultByTests -}}
     {{- with index $.Tests $i -}}
-        |{{ .Args }}|
+        |{{- range .Args }}{{ . }} {{ end -}}|
         {{- range $j, $success := $row -}}
                 [{{- if $success }}✅{{ else }}❌{{ end -}}]({{(index $.Libs $j).Location}})
         {{- end -}}|
