@@ -1,3 +1,7 @@
+/*
+Name = spf13/cobra
+URL  = https://github.com/spf13/cobra
+*/
 package main
 
 import (

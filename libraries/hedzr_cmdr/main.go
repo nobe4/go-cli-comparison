@@ -1,3 +1,7 @@
+/*
+Name = hedzr/cmdr
+URL  = https://github.com/hedzr/cmdr
+*/
 package main
 
 import (

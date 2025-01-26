@@ -1,3 +1,7 @@
+/*
+Name = integrii/flaggy
+URL  = https://github.com/integrii/flaggy
+*/
 package main
 
 import (

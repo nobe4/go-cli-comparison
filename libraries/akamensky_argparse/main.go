@@ -1,3 +1,7 @@
+/*
+Name = akamensky/argparse
+URL  = https://github.com/akamensky/argparse
+*/
 package main
 
 import (

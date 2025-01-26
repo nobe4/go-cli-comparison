@@ -1,3 +1,7 @@
+/*
+Name = flag
+URL  = https://pkg.go.dev/flag
+*/
 package main
 
 import (
