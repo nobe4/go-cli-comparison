@@ -57,6 +57,7 @@ const (
 var (
 	errNoMarker = errors.New("could not find marker comments")
 	errNoToken  = errors.New("could not find the GITHUB_TOKEN environment variable")
+	errPopulate = errors.New("could not populate stats")
 )
 
 type templateData struct {
@@ -98,7 +99,7 @@ func populateStats(libs []*library.Library) error {
 
 		if fullName, found := strings.CutPrefix(lib.URL, "https://github.com/"); found {
 			if err := populateGitHubStats(lib, fullName); err != nil {
-				return fmt.Errorf("could not populate stats for %s: %q", lib.URL, err)
+				return fmt.Errorf("%w %s: %w", errPopulate, lib.URL, err)
 			}
 		}
 	}
@@ -155,7 +156,7 @@ func updateReadme(libs []*library.Library) error {
 
 	content, err := os.ReadFile("tests/results.txt")
 	if err != nil {
-		return fmt.Errorf("could not read tests/results.txt: %w\ntry: go test ./...", err)
+		return fmt.Errorf("could not read tests/results.txt: %w\ntry: `go test ./...`", err)
 	}
 
 	r := result.Result{}

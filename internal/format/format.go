@@ -2,6 +2,7 @@ package format
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -38,7 +39,7 @@ func Time(t time.Time) string {
 //nolint:mnd // All those numbers are fine.
 func Count(i int) string {
 	if i < 1000 {
-		return fmt.Sprintf("%d", i)
+		return strconv.Itoa(i)
 	}
 
 	if i < 1_000_000 {

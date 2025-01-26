@@ -9,8 +9,8 @@ func TestRotate(t *testing.T) {
 	t.Parallel()
 
 	tests := []Result{
-		Result{[]bool{false}},
-		Result{[]bool{false, true}, []bool{true, false}},
+		{[]bool{false}},
+		{[]bool{false, true}, []bool{true, false}},
 	}
 
 	for _, test := range tests {

@@ -64,6 +64,7 @@ linters-settings:
           - $gostd
           - github.com/nobe4/go-cli-comparison
           - github.com/spf13/cobra
+          - github.com/alexflint/go-arg
 
   revive:
     enable-all-rules: true
