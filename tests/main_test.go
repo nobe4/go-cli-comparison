@@ -57,11 +57,13 @@ func TestMain(t *testing.T) {
 	})
 }
 
-func build(t *testing.T, lib library.Library) string {
+func build(t *testing.T, lib *library.Library) string {
 	t.Helper()
 
 	tmp := t.TempDir()
 	bin := filepath.Join(tmp, lib.NormalizedName)
+
+	t.Log("building", lib.FullPath, "to", bin)
 
 	// build executable
 	cmd := exec.CommandContext(
@@ -70,7 +72,7 @@ func build(t *testing.T, lib library.Library) string {
 		"build",
 		"-o",
 		bin,
-		lib.Path,
+		lib.FullPath,
 	)
 
 	out, err := cmd.CombinedOutput()

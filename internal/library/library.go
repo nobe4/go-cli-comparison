@@ -21,6 +21,7 @@ type Library struct {
 	URL            string
 	Location       string
 	Path           string
+	FullPath       string // full path FS root
 	Stars          string
 	LastUpdate     string
 }
@@ -59,14 +60,15 @@ func List() ([]*Library, error) {
 				}
 			}
 
-			path, _ := strings.CutPrefix(path, projectRoot+"/")
+			relativePath, _ := strings.CutPrefix(path, projectRoot+"/")
 
 			list = append(list, &Library{
 				Name:           name,
 				URL:            url,
 				NormalizedName: strings.ReplaceAll(name, "/", "_"),
-				Path:           path,
-				Location:       "https://github.com/nobe4/go-cli-comparison/blob/main/" + path,
+				FullPath:       path,
+				Path:           relativePath,
+				Location:       "https://github.com/nobe4/go-cli-comparison/blob/main/" + relativePath,
 			})
 		}
 

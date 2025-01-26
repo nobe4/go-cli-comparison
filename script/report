@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -e
+
+GITHUB_TOKEN="${GITHUB_TOKEN:?}"
+
+go run ./cmd/report/main.go
