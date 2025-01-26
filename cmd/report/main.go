@@ -25,7 +25,7 @@ const (
 	root          = "libraries/"
 	expectedParts = 3
 
-	marker         = "<!-- marker:comparison-table -->"
+	marker         = "<!-- marker:comparison-tables -->"
 	readmeTemplate = marker + `
 | library | tests | updated | stars |
 | --- | --- | --- | --- |
@@ -161,7 +161,7 @@ func updateReadme(libs []*library.Library) error {
 	r := result.Result{}
 	result.Unmarshal(content, &r)
 
-	t, err := template.New("readme table").Parse(readmeTemplate)
+	t, err := template.New("readme tables").Parse(readmeTemplate)
 	if err != nil {
 		return fmt.Errorf("could not parse template: %w", err)
 	}
@@ -173,8 +173,8 @@ func updateReadme(libs []*library.Library) error {
 		ResultByTests: r.Rotate(),
 	}
 
-	table := bytes.Buffer{}
-	if err := t.Execute(&table, templateData); err != nil {
+	tables := bytes.Buffer{}
+	if err := t.Execute(&tables, templateData); err != nil {
 		return fmt.Errorf("could not execute template: %w", err)
 	}
 
@@ -190,7 +190,7 @@ func updateReadme(libs []*library.Library) error {
 
 	header, _, tail := parts[0], parts[1], parts[2]
 
-	readme = bytes.Join([][]byte{header, table.Bytes(), tail}, []byte(""))
+	readme = bytes.Join([][]byte{header, tables.Bytes(), tail}, []byte(""))
 
 	if err := os.WriteFile("README.md", readme, 0o600); err != nil {
 		return fmt.Errorf("could not write README.md: %w", err)

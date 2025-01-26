@@ -2,9 +2,9 @@
 
 Overly engineered comparison of the various way to build a CLI in Go
 
-# The comparison table
+# The comparison tables
 
-<!-- marker:comparison-table -->
+<!-- marker:comparison-tables -->
 | library | tests | updated | stars |
 | --- | --- | --- | --- |
 |[akamensky/argparse](https://github.com/akamensky/argparse)|[✅]()[❌](https://github.com/nobe4/go-cli-comparison/blob/main/internal/spec/list.go#L10-L13)[❌](https://github.com/nobe4/go-cli-comparison/blob/main/internal/spec/list.go#L16-L19)[❌](https://github.com/nobe4/go-cli-comparison/blob/main/internal/spec/list.go#L22-L25)[❌](https://github.com/nobe4/go-cli-comparison/blob/main/internal/spec/list.go#L26-L29)[❌](https://github.com/nobe4/go-cli-comparison/blob/main/internal/spec/list.go#L30-L33)[❌](https://github.com/nobe4/go-cli-comparison/blob/main/internal/spec/list.go#L36-L39)[❌](https://github.com/nobe4/go-cli-comparison/blob/main/internal/spec/list.go#L40-L43)[❌](https://github.com/nobe4/go-cli-comparison/blob/main/internal/spec/list.go#L44-L47)|2 years ago|620|
@@ -29,4 +29,4 @@ Overly engineered comparison of the various way to build a CLI in Go
 |[-d a -d b ](https://github.com/nobe4/go-cli-comparison/blob/main/internal/spec/list.go#L44-L47)|[❌](https://github.com/nobe4/go-cli-comparison/blob/main/libraries/akamensky_argparse/main.go)[❌](https://github.com/nobe4/go-cli-comparison/blob/main/libraries/alexflint_go-arg/main.go)[✅](https://github.com/nobe4/go-cli-comparison/blob/main/libraries/flag/main.go)[❌](https://github.com/nobe4/go-cli-comparison/blob/main/libraries/hedzr_cmdr/main.go)[❌](https://github.com/nobe4/go-cli-comparison/blob/main/libraries/integrii_flaggy/main.go)[❌](https://github.com/nobe4/go-cli-comparison/blob/main/libraries/jessevdk_go-flags/main.go)[✅](https://github.com/nobe4/go-cli-comparison/blob/main/libraries/spf13_cobra/main.go)|
 
 
-<!-- marker:comparison-table -->
+<!-- marker:comparison-tables -->
