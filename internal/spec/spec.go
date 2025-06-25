@@ -4,90 +4,50 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 )
 
 var errInvalidOptions = errors.New("invalid options")
 
-type Options struct {
-	// desc:      Boolean toggle, default to false.
-	// default:   0
-	// type:      bool
-	// regex:     -\w
-	// e.g:       -a
-	A bool `json:"a"`
+type State int
 
-	// desc:      Count how many times the flag was passed, default to 0;
-	// default:   0
-	// type:      int
-	// regex:     (-\w)( \1)*
-	// e.g.:      -b -b -b
-	B int `json:"b"`
+const (
+	StateSuccess State = iota
+	StatePartial
+	StateFailure
+)
 
-	// desc:      Store an string
-	// default:   ""
-	// type:      string
-	// regex:     -\w(=| )?\.+
-	// e.g.:      -c=abcd
-	C string `json:"c"`
+type Spec struct {
+	ID          int
+	Description string
+	Default     string
+	Type        string
+	Regex       string
+	Comments    []string
+	State       State
 
-	// desc:      Store an array of strings
-	// default:   []
-	// type:      []string
-	// regex:     (-\w)(=| )?\.+( \1(=| )?\.+)*
-	// e.g.:      -d=a -d b -dc
-	D []string `json:"d"`
+	Tests []Test
 }
+type Specs []Spec
 
-func (o Options) Equal(o2 Options) bool {
-	if o.A != o2.A {
-		return false
-	}
+type TestResults []bool
 
-	if o.B != o2.B {
-		return false
-	}
+type Results []TestResults
 
-	if o.C != o2.C {
-		return false
-	}
+func (s Specs) Populate(r io.Reader) error {
 
-	if len(o.D) != len(o2.D) {
-		return false
-	}
-
-	for i, v := range o.D {
-		if v != o2.D[i] {
-			return false
-		}
-	}
-
-	return true
-}
-
-func Unmarshal(s []byte) (Options, error) {
-	o := Options{}
-
-	if err := json.Unmarshal(s, &o); err != nil {
-		return o, fmt.Errorf("failed to unmarshal %w: %w", errInvalidOptions, err)
-	}
-
-	return o, nil
-}
-
-func (o Options) Marshal() ([]byte, error) {
-	b, err := json.MarshalIndent(o, "", "  ")
+	c, err := io.ReadAll(r)
 	if err != nil {
-		return b, fmt.Errorf("failed to marshal %w: %w", errInvalidOptions, err)
+		return err
 	}
 
-	return b, nil
-}
+	results := Results{}
 
-func (o Options) String() string {
-	b, err := o.Marshal()
-	if err != nil {
-		return fmt.Sprintf("failed to marshal: %v", err)
+	if err := json.Unmarshal(c, &results); err != nil {
+		return err
 	}
 
-	return string(b)
+	fmt.Printf("%+v\n", results)
+
+	return nil
 }

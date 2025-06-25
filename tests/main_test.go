@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -22,7 +23,8 @@ func TestMain(t *testing.T) {
 		t.Fatalf("could not get the list of libraries: %v", err)
 	}
 
-	results := result.New(len(libs), len(spec.Tests))
+	oldResults := result.New(len(libs), len(spec.List))
+	results := spec.Results{}
 
 	for i, lib := range libs {
 		t.Run(lib.Name, func(t *testing.T) {
@@ -30,28 +32,39 @@ func TestMain(t *testing.T) {
 
 			bin := build(t, lib)
 
-			for j, test := range spec.Tests {
-				t.Run(strings.Join(test.Args, " "), func(t *testing.T) {
-					got, success := run(t, bin, test.Args)
+			for j, s := range spec.List {
+				testResults := spec.TestResults{}
 
-					t.Log(test.Location())
+				t.Run(strconv.Itoa(s.ID), func(t *testing.T) {
+					t.Parallel()
 
-					if success {
-						success = test.Want.Equal(got)
-					}
+					for _, test := range s.Tests {
+						t.Run(strings.Join(test.Args, " "), func(t *testing.T) {
+							got, success := run(t, bin, test.Args)
 
-					results[i][j] = success
+							t.Log(test.Location())
 
-					if !success {
-						t.Fatalf("want Options to be %v, got: %v", test.Want, got)
+							if success {
+								success = test.Want.Equal(got)
+							}
+
+							oldResults[i][j] = success
+							testResults = append(testResults, success)
+
+							if !success {
+								t.Fatalf("want Options to be %v, got: %v", test.Want, got)
+							}
+						})
 					}
 				})
+
+				results = append(results, testResults)
 			}
 		})
 	}
 
 	t.Cleanup(func() {
-		if err := os.WriteFile("results.txt", results.Marshal(), 0o600); err != nil {
+		if err := os.WriteFile("results.txt", oldResults.Marshal(), 0o600); err != nil {
 			t.Fatalf("could not write results to file: %v", err)
 		}
 	})
