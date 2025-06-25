@@ -9,6 +9,9 @@ IDs are assigned as code to test for each specification is written.
 > [!NOTE]
 > "option" is prefered to "flag" as suggested by POSIX.1-2024.
 
+<!-- marker:spec-table -->
+<!-- marker:spec-table -->
+
 | id  | regex / name          | example                      | expected parsing                       | comments                        |
 | --- | ---                   | ---                          | ---                                    | ---                             |
 |     | `-\w`                 | `-x`                         | `{ "x": true }`                        |                                 |
